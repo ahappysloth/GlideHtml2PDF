@@ -64,242 +64,118 @@ window.function = function (html, fileName, format, zoom, orientation, margin, b
 		credit_card: [319, 508],
 	};
 
-	// GET FINAL DIMENSIONS FROM SELECTED FORMAT
+	// GET FINAL DIMESIONS FROM SELECTED FORMAT
 	const dimensions = customDimensions || formatDimensions[format];
 	const finalDimensions = dimensions.map((dimension) => Math.round(dimension / zoom));
 
+	// LOG SETTINGS TO CONSOLE
+	console.log(
+		`Filename: ${fileName}\n` +
+			`Format: ${format}\n` +
+			`Dimensions: ${dimensions}\n` +
+			`Zoom: ${zoom}\n` +
+			`Final Dimensions: ${finalDimensions}\n` +
+			`Orientation: ${orientation}\n` +
+			`Margin: ${margin}\n` +
+			`Break before: ${breakBefore}\n` +
+			`Break after: ${breakAfter}\n` +
+			`Break avoid: ${breakAvoid}\n` +
+			`Quality: ${quality}`
+	);
+
 	const customCSS = `
 	body {
-	  margin: 0 !important;
-	  padding: 0 !important;
-	  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	  margin: 0!important
 	}
   
-	.pdf-container {
-	  position: relative;
-	  padding-top: 50px;
-	}
-  
-	.header-bar {
+	button#download {
 	  position: fixed;
-	  top: 0;
-	  left: 0;
-	  right: 0;
-	  height: 50px;
-	  background: white;
-	  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-	  display: flex;
-	  align-items: center;
-	  justify-content: flex-end;
-	  padding: 0 16px;
-	  z-index: 1000;
-	}
-  
-	.download-button {
-	  display: inline-flex;
-	  align-items: center;
-	  background: #2563eb;
-	  color: white;
-	  font-weight: 500;
+          z-index: 10;
+	  border-radius: 0.5rem;
 	  font-size: 14px;
-	  padding: 8px 16px;
-	  border-radius: 6px;
+	  font-weight: 600;
+	  line-height: 1.5rem;
+	  color: #0d0d0d;
 	  border: none;
+	  font-family: 'Inter', sans-serif;;
+	  padding: 0px 12px;
+	  height: 32px;
+	  background: #ffffff;
+	  top: 8px;
+	  right: 8px;
+	  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 1px 2.5px rgba(0, 0, 0, 0.1);
 	  cursor: pointer;
-	  transition: background 0.2s ease;
-	  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 	}
   
-	.download-button:hover {
-	  background: #1d4ed8;
+	button#download:hover {
+	  background: #f5f5f5;
+	  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06), 0 6px 12px -3px rgba(0, 0, 0, 0.1);
 	}
   
-	.download-button svg {
-	  width: 16px;
-	  height: 16px;
-	  margin-right: 6px;
+	button#download.downloading {
+	  color: #ea580c;
 	}
   
-	.download-button.generating {
-	  background: #9ca3af;
-	  pointer-events: none;
+	button#download.done {
+	  color: #16a34a;
 	}
   
-	.download-button.success {
-	  background: #10b981;
-	}
-  
-	.download-button.error {
-	  background: #ef4444;
-	}
-  
-	#content {
-	  padding: 24px;
-	  max-width: 100%;
-	}
-  
-	/* Improved scrollbar */
 	::-webkit-scrollbar {
-	  width: 8px;
-	  height: 8px;
-	}
-  
-	::-webkit-scrollbar-track {
-	  background: rgba(0,0,0,0.05);
+	  width: 5px;
+	  background-color: rgb(0 0 0 / 8%);
 	}
   
 	::-webkit-scrollbar-thumb {
-	  background: rgba(0,0,0,0.2);
+	  background-color: rgb(0 0 0 / 32%);
 	  border-radius: 4px;
-	}
-  
-	::-webkit-scrollbar-thumb:hover {
-	  background: rgba(0,0,0,0.3);
 	}
 	`;
 
 	// HTML THAT IS RETURNED AS A RENDERABLE URL
 	const originalHTML = `
-	  <!DOCTYPE html>
-	  <html lang="en">
-	  <head>
-	    <meta charset="UTF-8">
-	    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	    <title>${fileName}</title>
-	    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-	    <style>${customCSS}</style>
-	  </head>
-	  <body>
-	    <div class="pdf-container">
-	      <div class="header-bar">
-	        <button id="download-btn" class="download-button">
-	          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-	            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-	            <polyline points="7 10 12 15 17 10"></polyline>
-	            <line x1="12" y1="15" x2="12" y2="3"></line>
-	          </svg>
-	          Download PDF
-	        </button>
-	      </div>
-	      <div id="content">${html}</div>
-	    </div>
-	    
-	    <script>
-	    // Wait for HTML2PDF to be fully loaded
-	    document.addEventListener('DOMContentLoaded', function() {
-	      const downloadBtn = document.getElementById('download-btn');
-	      const contentEl = document.getElementById('content');
-	      
-	      function fallbackSaveAction(blob) {
-	        const a = document.createElement('a');
-	        a.href = URL.createObjectURL(blob);
-	        a.download = '${fileName}.pdf';
-	        document.body.appendChild(a);
-	        a.click();
-	        setTimeout(function() {
-	          document.body.removeChild(a);
-	          URL.revokeObjectURL(a.href);
-	        }, 100);
-	      }
-	      
-	      // Handle download
-	      downloadBtn.addEventListener('click', function() {
-	        // Update UI
-	        downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Creating PDF...';
-	        downloadBtn.classList.add('generating');
-	        
-	        // Configure PDF options
-	        const pdfOptions = {
-	          margin: ${margin},
-	          filename: '${fileName}.pdf',
-	          image: { type: 'jpeg', quality: 0.98 },
-	          html2canvas: {
-	            useCORS: true,
-	            scale: ${quality},
-                    scrollX: 0,
-                    scrollY: 0,
-                    windowWidth: document.documentElement.offsetWidth,
-                    windowHeight: document.documentElement.offsetHeight
-	          },
-	          jsPDF: {
-	            unit: 'px',
-	            format: [${finalDimensions}],
-	            orientation: '${orientation}',
-	            hotfixes: ['px_scaling']
-	          },
-	          pagebreak: { 
-	            mode: ['css', 'avoid-all'], 
-	            before: ${JSON.stringify(breakBefore)}, 
-	            after: ${JSON.stringify(breakAfter)}, 
-	            avoid: ${JSON.stringify(breakAvoid)} 
-	          }
-	        };
-	        
-	        // Generate and download PDF with fallback mechanism
-	        html2pdf()
-	          .from(contentEl)
-	          .set(pdfOptions)
-	          .toPdf()
-	          .get('pdf')
-	          .then(function(pdf) {
-	            try {
-	              const blob = pdf.output('blob');
-	              
-	              // Try normal save first
-	              try {
-	                pdf.save('${fileName}.pdf');
-	                
-	                // Update UI to success state
-	                downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Downloaded!';
-	                downloadBtn.classList.remove('generating');
-	                downloadBtn.classList.add('success');
-	              } catch (saveError) {
-	                console.warn('Normal save failed, trying fallback:', saveError);
-	                fallbackSaveAction(blob);
-	                
-	                // Update UI to success state
-	                downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Downloaded!';
-	                downloadBtn.classList.remove('generating');
-	                downloadBtn.classList.add('success');
-	              }
-	            } catch (pdfError) {
-	              console.error('PDF generation or save error:', pdfError);
-	              
-	              // Update UI to error state
-	              downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Error - Try Again';
-	              downloadBtn.classList.remove('generating');
-	              downloadBtn.classList.add('error');
-	            }
-	            
-	            // Reset button after delay
-	            setTimeout(function() {
-	              downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download PDF';
-	              downloadBtn.classList.remove('generating', 'success', 'error');
-	            }, 3000);
-	          })
-	          .catch(function(error) {
-	            console.error('PDF generation error:', error);
-	            
-	            // Update UI to error state
-	            downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Error - Try Again';
-	            downloadBtn.classList.remove('generating');
-	            downloadBtn.classList.add('error');
-	            
-	            // Reset button after delay
-	            setTimeout(function() {
-	              downloadBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Download PDF';
-	              downloadBtn.classList.remove('generating', 'success', 'error');
-	            }, 3000);
-	          });
-	      });
-	    });
-	    </script>
-	  </body>
-	  </html>
-	`;
+	  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+          <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+	  <style>${customCSS}</style>
+	  <div class="main">
+	  <div class="header">
+		<button class="button" id="download">Download</button>
+	  </div>
+	  <div id="content">${html}</div>
+	  </div>
+	  <script>
+	  document.getElementById('download').addEventListener('click', function() {
+		var element = document.getElementById('content');
+		var button = this;
+		button.innerText = 'Downloading...';
+		button.className = 'downloading';
+  
+		var opt = {
+		pagebreak: { mode: ['css'], before: ${JSON.stringify(breakBefore)}, after: ${JSON.stringify(breakAfter)}, avoid: ${JSON.stringify(breakAvoid)} },
+		margin: ${margin},
+		filename: '${fileName}',
+		html2canvas: {
+		  useCORS: true,
+		  scale: ${quality}
+		},
+		jsPDF: {
+		  unit: 'px',
+		  orientation: '${orientation}',
+		  format: [${finalDimensions}],
+		  hotfixes: ['px_scaling']
+		}
+		};
+		html2pdf().set(opt).from(element).toPdf().get('pdf').then(function(pdf) {
+		button.innerText = 'Done 🎉';
+		button.className = 'done';
+		setTimeout(function() { 
+		  button.innerText = 'Download';
+		  button.className = ''; 
+		}, 2000);
+		}).save();
+	  });
+	  </script>
+	  `;
 
 	var encodedHtml = encodeURIComponent(originalHTML);
 	return "data:text/html;charset=utf-8," + encodedHtml;
-};
-};
 };
