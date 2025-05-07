@@ -176,10 +176,6 @@ window.function = function (html, fileName, format, zoom, orientation, margin, b
 	  </script>
 	  `;
 
-	const htmlBlob = new Blob([originalHTML], { type: "text/html" });
-  	const blobUrl  = URL.createObjectURL(htmlBlob);
-	return blobUrl;
-
-	// var encodedHtml = encodeURIComponent(originalHTML);
-	// return "data:text/html;charset=utf-8," + encodedHtml;
+	var encodedHtml = encodeURIComponent(originalHTML);
+	return "data:text/html;charset=utf-8," + encodedHtml;
 };
